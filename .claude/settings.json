@@ -1,0 +1,16 @@
+{
+  "enabledMcpjsonServers": ["hireloop"],
+  "permissions": {
+    "allow": [
+      "mcp__hireloop",
+      "WebSearch",
+      "WebFetch",
+      "Read(./profile.md)",
+      "Read(./.claude/skills/**)"
+    ],
+    "deny": [
+      "Read(./.env)",
+      "Write(./.env)"
+    ]
+  }
+}

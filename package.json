@@ -1,0 +1,55 @@
+{
+  "name": "hireloop",
+  "version": "0.1.0",
+  "description": "Agentic job-outreach pipeline on Claude Code: find hiring posts, find decision-maker emails, draft personalised emails, send only after your approval.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/S07K/hireloop.git"
+  },
+  "homepage": "https://github.com/S07K/hireloop#readme",
+  "bugs": {
+    "url": "https://github.com/S07K/hireloop/issues"
+  },
+  "keywords": [
+    "claude-code",
+    "mcp",
+    "agents",
+    "job-search",
+    "cold-email",
+    "outreach",
+    "automation"
+  ],
+  "scripts": {
+    "setup": "tsx src/cli.ts setup",
+    "doctor": "tsx src/cli.ts doctor",
+    "dashboard": "tsx src/cli.ts dashboard",
+    "pipeline": "tsx src/cli.ts run pipeline",
+    "hunt": "tsx src/cli.ts run hunt",
+    "enrich": "tsx src/cli.ts run enrich",
+    "draft": "tsx src/cli.ts run draft",
+    "mcp": "tsx src/mcp/server.ts",
+    "typecheck": "tsc --noEmit",
+    "test:sources": "tsx scripts/smoke-sources.ts",
+    "test:mcp": "tsx scripts/smoke-mcp.ts"
+  },
+  "license": "MIT",
+  "type": "module",
+  "dependencies": {
+    "@hono/node-server": "^2.1.8",
+    "@modelcontextprotocol/sdk": "^1.32.2",
+    "dotenv": "^18.0.10",
+    "fast-xml-parser": "^5.12.0",
+    "hono": "^4.13.18",
+    "nodemailer": "^10.5.0",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "@types/nodemailer": "^8.0.2",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2"
+  },
+  "engines": {
+    "node": ">=22.13"
+  }
+}

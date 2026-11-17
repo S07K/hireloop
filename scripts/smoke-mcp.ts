@@ -1,0 +1,34 @@
+import { Client } from "@modelcontextprotocol/sdk/client/index.js";
+import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
+import os from "node:os";
+import path from "node:path";
+// Never touch the real pipeline DB from a smoke test.
+process.env.HIRELOOP_DB ??= path.join(os.tmpdir(), `hireloop-smoke-${Date.now()}.db`);
+const client = new Client({ name: "smoke", version: "0" });
+await client.connect(new StdioClientTransport({ command: "npx", args: ["--no-install", "tsx", "src/mcp/server.ts"], env: { ...process.env } as Record<string, string> }));
+const tools = await client.listTools();
+console.log("tools:", tools.tools.map((t) => t.name).join(", "));
+const call = async (name: string, args: Record<string, unknown> = {}) => {
+  const r: any = await client.callTool({ name, arguments: args });
+  const text = r.content?.[0]?.text ?? "";
+  console.log(`\n## ${name} ${r.isError ? "ERROR" : ""}\n${text.slice(0, 700)}`);
+  return r.isError ? null : JSON.parse(text);
+};
+const brief = await call("get_search_brief");
+const hn = await call("fetch_job_source", { source: "remotive", limit: 2 });
+const c = hn.candidates[0];
+const saved = await call("save_leads", { leads: [{ source: "remotive", source_url: c.url, role: c.title, company: c.company, company_domain: "vercel.com", work_mode: "remote", location: c.location, eligible_for_me: true, fit_score: 80, fit_reason: "smoke test" }] });
+await call("save_leads", { leads: [{ source: "remotive", source_url: c.url, role: c.title, work_mode: "remote", fit_score: 80, fit_reason: "dup" }] });
+await call("list_leads", { needs: "contacts" });
+await call("scrape_company_site", { domain: "simpleanalytics.com" });
+await call("verify_email", { email: "nobody@thisdomaindoesnotexist-xyz123.com" });
+await call("github_emails", { username: "adriaanvanrossum" });
+await call("infer_email_pattern", { known: [{ name: "Jane Doe", email: "jane.doe@acme.com" }, { name: "John Smith", email: "john.smith@acme.com" }] });
+await call("find_person_email", { full_name: "Guillermo Rauch", domain: "vercel.com" });
+const cid = await call("save_contact", { lead_id: saved.created[0], name: "Test Person", kind: "founder", email: "test@vercel.com", email_confidence: 40, email_source: "pattern:guess" });
+await call("get_writing_context", { lead_id: saved.created[0] });
+await call("save_draft", { lead_id: saved.created[0], contact_id: cid.contact_id, subject: "hi [Name]", body: "x".repeat(60), rationale: "t" });
+await call("save_draft", { lead_id: saved.created[0], contact_id: cid.contact_id, subject: "re: your full-stack post", body: "Hi Test,\n\nSaw your post. I built X.\n\nOpen to a 15-min call?\n\nYour Name", rationale: "smoke" });
+await call("list_leads", { needs: "drafts" });
+await call("pipeline_stats");
+await client.close();

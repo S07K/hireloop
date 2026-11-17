@@ -1,0 +1,163 @@
+{
+  "candidate": {
+    "name": "Your Name",
+    "email": "you@example.com",
+    "location": "Bangalore, India",
+    "timezone": "IST (UTC+5:30)",
+    "work_authorization": [
+      "India"
+    ],
+    "years_experience": 5
+  },
+  "targets": {
+    "roles": [
+      "Full Stack Engineer",
+      "Frontend Engineer",
+      "Software Engineer",
+      "React Developer"
+    ],
+    "keywords": [
+      "react",
+      "next.js",
+      "typescript",
+      "node.js",
+      "llm"
+    ],
+    "seniority": [
+      "mid",
+      "senior"
+    ],
+    "exclude_keywords": [
+      "security clearance",
+      "us citizens only",
+      "unpaid",
+      "internship"
+    ],
+    "min_fit_score": 60
+  },
+  "location": {
+    "work_modes": [
+      "remote",
+      "hybrid"
+    ],
+    "preferred_locations": [
+      "India",
+      "APAC",
+      "Worldwide",
+      "Anywhere"
+    ],
+    "hybrid_cities": [
+      "Bangalore",
+      "Bengaluru",
+      "Gurgaon",
+      "Gurugram",
+      "Delhi",
+      "Noida",
+      "Pune",
+      "Hyderabad"
+    ],
+    "priority": [
+      {
+        "label": "Remote \u00b7 US company",
+        "work_mode": "remote",
+        "company_regions": [
+          "US",
+          "United States"
+        ],
+        "cities": []
+      },
+      {
+        "label": "Remote \u00b7 other",
+        "work_mode": "remote",
+        "company_regions": [],
+        "cities": []
+      },
+      {
+        "label": "Hybrid \u00b7 Bangalore",
+        "work_mode": "hybrid",
+        "company_regions": [],
+        "cities": [
+          "Bangalore",
+          "Bengaluru"
+        ]
+      }
+    ]
+  },
+  "sources": {
+    "hn": true,
+    "reddit": {
+      "enabled": true,
+      "subreddits": []
+    },
+    "remoteok": true,
+    "remotive": true,
+    "weworkremotely": true,
+    "himalayas": true,
+    "jobicy": true,
+    "web_search": {
+      "linkedin_posts": true,
+      "x_posts": true,
+      "startup_boards": true,
+      "other_social": true,
+      "extra_sites": []
+    },
+    "ats_watchlist": [
+      {
+        "ats": "greenhouse",
+        "slug": "vercel",
+        "company": "Vercel"
+      },
+      {
+        "ats": "ashby",
+        "slug": "supabase",
+        "company": "Supabase"
+      }
+    ],
+    "apify": {
+      "linkedin_actor": "harvestapi/linkedin-post-search",
+      "linkedin_input": {
+        "searchQueries": [
+          "{{query}}"
+        ],
+        "maxPosts": 40,
+        "postedLimit": "week",
+        "sortBy": "date",
+        "profileScraperMode": "short"
+      },
+      "x_actor": "apidojo/tweet-scraper",
+      "x_input": {
+        "searchTerms": [
+          "{{query}}"
+        ],
+        "sort": "Latest",
+        "maxItems": 50,
+        "tweetLanguage": "en"
+      }
+    },
+    "max_age_days": 21
+  },
+  "outreach": {
+    "daily_send_limit": 25,
+    "min_delay_sec": 90,
+    "max_delay_sec": 240,
+    "followup_after_days": 4,
+    "max_followups": 1,
+    "max_contacts_per_lead": 2,
+    "attach_resume": false,
+    "resume_path": "",
+    "signature": "Your Name\n+91-XXXXXXXXXX",
+    "links": {
+      "Portfolio": "https://your-portfolio.dev",
+      "GitHub": "https://github.com/you",
+      "LinkedIn": "https://linkedin.com/in/you",
+      "Resume": "https://link-to-your-resume.pdf"
+    }
+  },
+  "agents": {
+    "model": "sonnet",
+    "max_leads_per_run": 40
+  },
+  "dashboard": {
+    "port": 4317
+  }
+}

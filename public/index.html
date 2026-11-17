@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>hireloop</title>
+<style>
+:root{--bg:#f7f7f5;--panel:#fff;--ink:#1b1b1a;--muted:#6b6b66;--line:#e6e5e0;--accent:#2f6f4f;--accent-ink:#fff;--warn:#a1620f;--bad:#b23a3a;--chip:#efeee9;--mono:ui-monospace,SFMono-Regular,Menlo,monospace}
+@media (prefers-color-scheme:dark){:root{--bg:#141413;--panel:#1d1d1b;--ink:#ecebe6;--muted:#9a9993;--line:#2e2e2b;--accent:#5fae86;--accent-ink:#0f1a14;--warn:#e0a650;--bad:#e07a7a;--chip:#2a2a27}}
+*{box-sizing:border-box}body{margin:0;font:14px/1.5 -apple-system,BlinkMacSystemFont,"Inter","Segoe UI",sans-serif;background:var(--bg);color:var(--ink)}
+header{display:flex;align-items:center;gap:24px;padding:14px 24px;border-bottom:1px solid var(--line);background:var(--panel);position:sticky;top:0;z-index:5;flex-wrap:wrap}
+.brand{font-weight:700;letter-spacing:-.02em;font-size:17px}.brand span{color:var(--accent)}
+nav{display:flex;gap:4px;flex-wrap:wrap}nav button{background:none;border:0;padding:6px 12px;border-radius:8px;color:var(--muted);font:inherit;cursor:pointer}
+nav button.on{background:var(--chip);color:var(--ink);font-weight:600}.badge{background:var(--accent);color:var(--accent-ink);border-radius:10px;padding:0 7px;font-size:11px;margin-left:4px}
+main{max-width:1280px;margin:0 auto;padding:24px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:20px}
+.stat{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px}.stat b{display:block;font-size:24px;letter-spacing:-.02em}.stat small{color:var(--muted)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:14px}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+button.btn{border:1px solid var(--line);background:var(--panel);color:var(--ink);padding:7px 12px;border-radius:8px;font:inherit;cursor:pointer}
+button.btn:hover{border-color:var(--muted)}button.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:600}
+button.danger{color:var(--bad)}button:disabled{opacity:.5;cursor:not-allowed}
+input,select,textarea{font:inherit;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:7px 10px}
+textarea{width:100%;min-height:220px;font-family:var(--mono);font-size:13px;line-height:1.55;resize:vertical}
+input.subject{width:100%;font-weight:600}
+table{width:100%;border-collapse:collapse;background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top}th{font-size:12px;color:var(--muted);font-weight:600;background:var(--chip)}
+tr.click{cursor:pointer}tr.click:hover td{background:var(--chip)}
+.chip{display:inline-block;background:var(--chip);border-radius:6px;padding:1px 7px;font-size:12px;margin:1px 2px 1px 0;color:var(--muted)}
+.score{font-weight:700;font-variant-numeric:tabular-nums}.hi{color:var(--accent)}.mid{color:var(--warn)}.lo{color:var(--bad)}
+.muted{color:var(--muted)}.small{font-size:12px}a{color:var(--accent)}
+pre.log{background:#0f0f0e;color:#d6d5cf;border-radius:10px;padding:14px;max-height:420px;overflow:auto;font:12px/1.5 var(--mono);white-space:pre-wrap;margin:0}
+.drawer{position:fixed;inset:0 0 0 auto;width:min(720px,100%);background:var(--panel);border-left:1px solid var(--line);overflow:auto;padding:24px;z-index:10;box-shadow:-10px 0 40px #0002}
+.post{white-space:pre-wrap;background:var(--chip);border-radius:10px;padding:12px;max-height:260px;overflow:auto;font-size:13px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}@media(max-width:800px){.grid2{grid-template-columns:1fr}main{padding:16px}.tablewrap{overflow-x:auto}}
+.empty{text-align:center;padding:40px;color:var(--muted)}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;z-index:20}
+h2{font-size:18px;margin:0 0 12px;letter-spacing:-.01em}h3{font-size:14px;margin:16px 0 8px}
+.kbd{font-family:var(--mono);font-size:11px;border:1px solid var(--line);border-radius:4px;padding:0 4px}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">hire<span>loop</span></div>
+  <nav id="nav"></nav>
+  <div class="row" style="margin-left:auto" id="runstate"></div>
+</header>
+<main id="app"></main>
+<script>
+const $ = (s, el = document) => el.querySelector(s);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+const api = async (p, opt = {}) => { const r = await fetch("/api" + p, { headers: { "content-type": "application/json" }, ...opt, body: opt.body ? JSON.stringify(opt.body) : undefined }); const j = await r.json(); if (!r.ok) throw new Error(j.error || r.statusText); return j; };
+const toast = (m) => { const t = document.createElement("div"); t.className = "toast"; t.textContent = m; document.body.append(t); setTimeout(() => t.remove(), 2600); };
+const scoreCls = (s) => (s >= 75 ? "hi" : s >= 55 ? "mid" : "lo");
+const ago = (d) => { if (!d) return ""; const t = Date.parse(d.includes("T") ? d : d.replace(" ", "T") + "Z"); const h = (Date.now() - t) / 36e5; return h < 1 ? "just now" : h < 24 ? `${Math.round(h)}h ago` : `${Math.round(h / 24)}d ago`; };
+const store = { get: (k, d) => { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } }, set: (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} } };
+
+const TABS = { overview: "Overview", approvals: "Approvals", leads: "Leads", contacts: "Contacts", sent: "Sent", runs: "Runs", settings: "Settings" };
+let tab = location.hash.slice(1) || "overview";
+let stats = {};
+let liveLog = [];
+
+async function refreshStats() {
+  stats = await api("/stats");
+  $("#nav").innerHTML = Object.entries(TABS).map(([k, v]) => `<button class="${k === tab ? "on" : ""}" data-tab="${k}">${v}${k === "approvals" && stats.pending ? `<span class="badge">${stats.pending}</span>` : ""}</button>`).join("");
+  $("#runstate").innerHTML = stats.run
+    ? `<span class="small muted">● running <b>${stats.run.stage}</b> #${stats.run.id}</span><button class="btn danger" onclick="cancelRun()">Stop</button>`
+    : `<span class="small muted">sent today ${stats.sent_today}/${stats.daily_limit}</span>`;
+}
+document.addEventListener("click", (e) => { const b = e.target.closest("[data-tab]"); if (b) go(b.dataset.tab); });
+function go(t) { tab = t; location.hash = t; render(); }
+
+async function render() {
+  await refreshStats();
+  const app = $("#app");
+  try { app.innerHTML = await VIEWS[tab](); VIEWS[tab].after?.(); } catch (e) { app.innerHTML = `<div class="card">⚠ ${esc(e.message)}</div>`; }
+}
+
+// ------------------------------------------------------------------ overview
+const STAGE_INFO = [
+  ["pipeline", "Run full pipeline", "hunt → enrich → draft → follow-ups"],
+  ["hunt", "Hunt", "4 parallel scouts: boards, HN/Reddit, LinkedIn, X & web"],
+  ["enrich", "Find emails", "founders → hiring managers → recruiters"],
+  ["draft", "Draft emails", "personalised per post, saved for approval"],
+  ["followups", "Follow-ups", "same-thread nudges for no-reply emails"],
+];
+const VIEWS = {};
+VIEWS.overview = async () => {
+  const s = stats;
+  return `
+  <div class="stats">
+    ${[["Leads", s.leads], ["With emails", s.enriched], ["Awaiting approval", s.pending], ["Sent", s.sent], ["Replied", s.replied], ["Interviews", s.interviews]].map(([k, v]) => `<div class="stat"><b>${v}</b><small>${k}</small></div>`).join("")}
+  </div>
+  <div class="card">
+    <h2>Run agents</h2>
+    <p class="muted small" style="margin-top:-6px">Runs Claude Code headless on your Claude subscription. Nothing is ever sent without your approval.</p>
+    <div class="row">${STAGE_INFO.map(([k, label, hint], i) => `<button class="btn ${i === 0 ? "primary" : ""}" ${s.run ? "disabled" : ""} onclick="startRun('${k}')" title="${hint}">${label}</button>`).join("")}</div>
+  </div>
+  <div class="card"><div class="row" style="justify-content:space-between"><h2 style="margin:0">Live agent log</h2><span class="small muted">${s.run ? "streaming…" : "idle"}</span></div><div style="height:10px"></div><pre class="log" id="live">${esc(liveLog.join("\n")) || "Start a run to see agents work here."}</pre></div>`;
+};
+VIEWS.overview.after = () => { const l = $("#live"); if (l) l.scrollTop = l.scrollHeight; };
+async function startRun(stage) { try { const r = await api("/runs", { method: "POST", body: { stage } }); liveLog = []; toast(`Started ${stage} (#${r.run_id})`); render(); } catch (e) { toast(e.message); } }
+async function cancelRun() { await api("/runs/cancel", { method: "POST" }); toast("Stopping…"); }
+const es = new EventSource("/api/runs-stream");
+es.addEventListener("log", (e) => { const { line } = JSON.parse(e.data); liveLog.push(line); if (liveLog.length > 800) liveLog.shift(); const l = $("#live"); if (l) { l.textContent = liveLog.join("\n"); l.scrollTop = l.scrollHeight; } });
+es.addEventListener("done", (e) => { const d = JSON.parse(e.data); toast(`Run ${d.status}`); render(); });
+
+// ------------------------------------------------------------------ approvals
+VIEWS.approvals = async () => {
+  const drafts = await api("/drafts?status=pending");
+  const failed = await api("/drafts?status=failed");
+  const approved = await api("/drafts?status=approved");
+  if (!drafts.length && !failed.length && !approved.length) return `<div class="card empty">No drafts waiting. Run <b>Draft emails</b> from Overview.</div>`;
+  return `
+  <div class="row" style="justify-content:space-between;margin-bottom:14px">
+    <div><h2 style="margin:0">Approvals</h2><span class="small muted">${drafts.length} pending · ${approved.length} queued to send · daily limit ${stats.daily_limit}. Edits you make teach the writer your style.</span></div>
+    ${drafts.length ? `<button class="btn primary" onclick="approveAll()">Approve all ${drafts.length}</button>` : ""}
+  </div>
+  ${[...failed, ...drafts, ...approved].map(draftCard).join("")}`;
+};
+function draftCard(d) {
+  const editable = ["pending", "failed", "approved"].includes(d.status);
+  const ver = d.verification === "valid" ? `<span class="chip hi">✓ verified</span>` : d.verification === "catch_all" ? `<span class="chip mid">catch-all</span>` : `<span class="chip mid">unverified</span>`;
+  return `<div class="card" id="d${d.id}">
+    <div class="row" style="justify-content:space-between">
+      <div><b>${esc(d.contact_name || d.contact_email)}</b> <span class="muted">· ${esc(d.contact_title || d.contact_kind)} @ ${esc(d.company)}</span>
+        <div class="small muted">${esc(d.contact_email)} ${ver} <span class="chip">conf ${d.email_confidence}</span> <span class="chip">${d.kind}</span> · ${esc(d.role)} · <span class="score ${scoreCls(d.fit_score)}">${d.fit_score ?? "–"}</span> · <a href="${esc(d.source_url)}" target="_blank">post ↗</a></div></div>
+      <span class="chip">${d.status}</span>
+    </div>
+    ${d.error ? `<div class="small" style="color:var(--bad);margin-top:6px">⚠ ${esc(d.error)}</div>` : ""}
+    ${d.rationale ? `<div class="small muted" style="margin:8px 0">💡 ${esc(d.rationale)}</div>` : ""}
+    <input class="subject" value="${esc(d.subject)}" ${editable ? "" : "disabled"} data-f="subject">
+    <div style="height:8px"></div>
+    <textarea data-f="body" ${editable ? "" : "disabled"}>${esc(d.body)}</textarea>
+    <div class="row" style="margin-top:10px;justify-content:space-between">
+      <span class="small muted">${d.body.split(/\s+/).length} words</span>
+      <div class="row">
+        ${d.status === "approved" ? `<button class="btn" onclick="setStatus(${d.id},'pending')">Unqueue</button>` : `<button class="btn danger" onclick="setStatus(${d.id},'rejected')">Reject</button><button class="btn" onclick="saveDraft(${d.id})">Save edits</button><button class="btn primary" onclick="approve(${d.id})">Approve & queue</button>`}
+      </div>
+    </div></div>`;
+}
+const fields = (id) => ({ subject: $(`#d${id} [data-f=subject]`).value, body: $(`#d${id} [data-f=body]`).value });
+async function saveDraft(id) { await api(`/drafts/${id}`, { method: "PATCH", body: fields(id) }); toast("Saved"); }
+async function approve(id) { try { await api(`/drafts/${id}`, { method: "PATCH", body: { ...fields(id), status: "approved" } }); toast("Approved: queued for sending"); render(); } catch (e) { toast(e.message); } }
+async function setStatus(id, status) { try { await api(`/drafts/${id}`, { method: "PATCH", body: { status } }); render(); } catch (e) { toast(e.message); } }
+async function approveAll() {
+  if (!confirm(`Approve every pending draft? They'll be sent gradually (daily limit ${stats.daily_limit}).`)) return;
+  const ds = await api("/drafts?status=pending");
+  for (const d of ds) { const el = $(`#d${d.id}`); if (el) await api(`/drafts/${d.id}`, { method: "PATCH", body: fields(d.id) }); }
+  const r = await api("/drafts/approve-all", { method: "POST", body: { ids: ds.map((d) => d.id) } }); toast(`Approved ${r.approved}`); render();
+}
+
+// ------------------------------------------------------------------ leads
+const F = store.get("hl_filters", { max_tier: "", work_mode: "", location: "", min_score: "", status: "qualified,enriched,drafted,contacted,replied,interview", eligible: "1", q: "", source: "" });
+VIEWS.leads = async () => {
+  const qs = new URLSearchParams(Object.entries(F).filter(([, v]) => v)).toString();
+  const leads = await api("/leads?" + qs);
+  return `
+  <div class="card row">
+    <input placeholder="Search role / company / text" value="${esc(F.q)}" data-filter="q" style="flex:1;min-width:180px">
+    <input placeholder="Locations e.g. India, APAC, Worldwide" value="${esc(F.location)}" data-filter="location" style="min-width:220px">
+    <select data-filter="max_tier">${[["", "All priorities"], ["1", "Top priority only"], ["2", "Top 2 priorities"], ["3", "Top 3 priorities"]].map(([v, l]) => `<option value="${v}" ${(F.max_tier ?? "") === v ? "selected" : ""}>${l}</option>`).join("")}</select>
+    <select data-filter="work_mode">${[["", "Remote + hybrid"], ["remote", "Remote"], ["hybrid", "Hybrid"], ["onsite", "Onsite"]].map(([v, l]) => `<option value="${v}" ${F.work_mode === v ? "selected" : ""}>${l}</option>`).join("")}</select>
+    <select data-filter="source">${["", "linkedin", "x", "hn", "reddit", "remoteok", "remotive", "weworkremotely", "himalayas", "jobicy", "ats", "web"].map((v) => `<option value="${v}" ${F.source === v ? "selected" : ""}>${v || "All sources"}</option>`).join("")}</select>
+    <select data-filter="min_score">${[["", "Any score"], ["60", "60+"], ["70", "70+"], ["80", "80+"]].map(([v, l]) => `<option value="${v}" ${F.min_score === v ? "selected" : ""}>${l}</option>`).join("")}</select>
+    <select data-filter="status">${[["qualified,enriched,drafted,contacted,replied,interview", "Active"], ["qualified", "Qualified"], ["enriched", "Has emails"], ["drafted", "Drafted"], ["contacted", "Contacted"], ["replied,interview", "Replied/Interview"], ["archived,rejected", "Archived"]].map(([v, l]) => `<option value="${v}" ${F.status === v ? "selected" : ""}>${l}</option>`).join("")}</select>
+    <label class="small row" style="gap:4px"><input type="checkbox" data-filter="eligible" ${F.eligible ? "checked" : ""}> eligible for me</label>
+  </div>
+  ${leads.length ? `<div class="tablewrap"><table><tr><th>Priority</th><th>Score</th><th>Role</th><th>Company</th><th>Mode · Location</th><th>Poster</th><th>Source</th><th>Contacts</th><th>Status</th></tr>
+  ${leads.map((l) => `<tr class="click" onclick="openLead(${l.id})">
+    <td><span class="chip ${l.location_tier === 1 ? "hi" : ""}">P${l.location_tier}</span><div class="small muted">${esc(l.location_label || "other")}</div></td>
+    <td class="score ${scoreCls(l.fit_score)}">${l.fit_score ?? "–"}</td>
+    <td><b>${esc(l.role)}</b><div>${(l.tags || []).slice(0, 4).map((t) => `<span class="chip">${esc(t)}</span>`).join("")}</div></td>
+    <td>${esc(l.company || "")}<div class="small muted">${esc(l.company_domain || "")}${l.company_region ? " · " + esc(l.company_region) : ""}</div></td>
+    <td>${esc(l.work_mode || "?")}<div class="small muted">${esc(l.location || "")}${l.eligible_regions ? " · " + esc(l.eligible_regions) : ""}</div></td>
+    <td>${esc(l.poster_name || "")}<div class="small muted">${esc(l.poster_title || "")}</div></td>
+    <td><span class="chip">${esc(l.source)}</span><div class="small muted">${ago(l.posted_at || l.created_at)}</div></td>
+    <td>${l.contact_count}${l.pending_drafts ? ` <span class="badge">${l.pending_drafts}</span>` : ""}</td>
+    <td><span class="chip">${l.status}</span></td></tr>`).join("")}</table></div>` : `<div class="card empty">No leads match. Run <b>Hunt</b> or loosen filters.</div>`}`;
+};
+VIEWS.leads.after = () => document.querySelectorAll("[data-filter]").forEach((el) => {
+  const ev = el.tagName === "INPUT" && el.type !== "checkbox" ? "change" : "change";
+  el.addEventListener(ev, () => { F[el.dataset.filter] = el.type === "checkbox" ? (el.checked ? "1" : "") : el.value; store.set("hl_filters", F); render(); });
+});
+async function openLead(id) {
+  const { lead: l, contacts, drafts } = await api(`/leads/${id}`);
+  const d = document.createElement("div"); d.className = "drawer";
+  d.innerHTML = `
+    <div class="row" style="justify-content:space-between"><h2 style="margin:0">${esc(l.role)}</h2><button class="btn" onclick="this.closest('.drawer').remove()">Close <span class="kbd">esc</span></button></div>
+    <div class="muted">${esc(l.company || "")} ${l.company_domain ? `· <a href="https://${esc(l.company_domain)}" target="_blank">${esc(l.company_domain)}</a>` : ""} · <span class="score ${scoreCls(l.fit_score)}">${l.fit_score}</span></div>
+    <p class="small">${esc(l.fit_reason || "")}</p>
+    <div class="grid2 small">
+      <div><b>Mode</b><br>${esc(l.work_mode || "?")} · ${esc(l.location || "")}<br><b>Eligible regions</b><br>${esc(l.eligible_regions || "–")}${l.salary ? `<br><b>Salary</b><br>${esc(l.salary)}` : ""}</div>
+      <div><b>Posted by</b><br>${l.poster_url ? `<a href="${esc(l.poster_url)}" target="_blank">${esc(l.poster_name || "profile")}</a>` : esc(l.poster_name || "–")} ${esc(l.poster_title || "")}<br><b>Source</b><br><a href="${esc(l.source_url)}" target="_blank">${esc(l.source)} ↗</a>${l.apply_url ? ` · <a href="${esc(l.apply_url)}" target="_blank">apply ↗</a>` : ""}</div>
+    </div>
+    <h3>Post</h3><div class="post">${esc(l.post_text || "")}</div>
+    <h3>Contacts</h3>${contacts.length ? `<table>${contacts.map((c) => `<tr><td><b>${esc(c.name || "")}</b><div class="small muted">${esc(c.title || c.kind)}</div></td><td>${esc(c.email || "—")}<div class="small muted">${esc(c.email_source || "")} · conf ${c.email_confidence} · ${c.verification}</div></td><td class="small">${[c.linkedin_url && `<a href="${esc(c.linkedin_url)}" target="_blank">in</a>`, c.x_url && `<a href="${esc(c.x_url)}" target="_blank">x</a>`, c.github_url && `<a href="${esc(c.github_url)}" target="_blank">gh</a>`].filter(Boolean).join(" ")}</td></tr>`).join("")}</table>` : `<p class="muted small">None yet. Run Find emails.</p>`}
+    <h3>Drafts</h3>${drafts.length ? drafts.map((x) => `<div class="small"><span class="chip">${x.status}</span> ${esc(x.subject)} → ${esc(x.contact_email)}</div>`).join("") : `<p class="muted small">None</p>`}
+    <h3>Mark outcome</h3><div class="row">${["replied", "interview", "archived", "rejected"].map((s) => `<button class="btn" onclick="setLead(${l.id},'${s}')">${s}</button>`).join("")}</div>
+    <h3>Notes</h3><textarea style="min-height:80px" onchange="api('/leads/${l.id}',{method:'PATCH',body:{notes:this.value}})">${esc(l.notes || "")}</textarea>`;
+  document.body.append(d);
+}
+async function setLead(id, status) { await api(`/leads/${id}`, { method: "PATCH", body: { status } }); document.querySelector(".drawer")?.remove(); toast(`Marked ${status}`); render(); }
+document.addEventListener("keydown", (e) => { if (e.key === "Escape") document.querySelector(".drawer")?.remove(); });
+
+// ------------------------------------------------------------------ contacts / sent / runs / settings
+VIEWS.contacts = async () => {
+  const cs = await api("/contacts");
+  return cs.length ? `<div class="tablewrap"><table><tr><th>Person</th><th>Type</th><th>Email</th><th>Source</th><th>Company · Role</th><th>Profiles</th></tr>${cs.map((c) => `<tr class="click" onclick="openLead(${c.lead_id})"><td><b>${esc(c.name || "")}</b><div class="small muted">${esc(c.title || "")}</div></td><td><span class="chip">${c.kind}</span></td><td>${esc(c.email || "—")}<div class="small muted">conf ${c.email_confidence} · ${c.verification}</div></td><td class="small">${esc(c.email_source || "")}</td><td>${esc(c.company || "")}<div class="small muted">${esc(c.role || "")}</div></td><td class="small">${[c.linkedin_url && `<a href="${esc(c.linkedin_url)}" target="_blank" onclick="event.stopPropagation()">LinkedIn</a>`, c.x_url && `<a href="${esc(c.x_url)}" target="_blank" onclick="event.stopPropagation()">X</a>`].filter(Boolean).join(" · ")}</td></tr>`).join("")}</table></div>` : `<div class="card empty">No contacts yet.</div>`;
+};
+VIEWS.sent = async () => {
+  const ds = await api("/drafts?status=sent");
+  return ds.length ? `<div class="tablewrap"><table><tr><th>Sent</th><th>To</th><th>Subject</th><th>Company</th><th>Type</th><th></th></tr>${ds.map((d) => `<tr><td class="small">${ago(d.sent_at)}</td><td>${esc(d.contact_name || "")}<div class="small muted">${esc(d.contact_email)}</div></td><td>${esc(d.subject)}</td><td>${esc(d.company)}</td><td><span class="chip">${d.kind}</span></td><td><button class="btn" onclick="setLead(${d.lead_id},'replied')">Got reply</button></td></tr>`).join("")}</table></div>` : `<div class="card empty">Nothing sent yet.</div>`;
+};
+VIEWS.runs = async () => {
+  const rs = await api("/runs");
+  return rs.length ? `<div class="tablewrap"><table><tr><th>#</th><th>Stage</th><th>Status</th><th>Started</th><th>Cost*</th><th>Summary</th></tr>${rs.map((r) => `<tr class="click" onclick="showRun(${r.id})"><td>${r.id}</td><td>${r.stage}</td><td><span class="chip">${r.status}</span></td><td class="small">${ago(r.started_at)}</td><td class="small">${r.cost_usd != null ? "$" + r.cost_usd.toFixed(2) : ""}</td><td class="small">${esc((r.summary || "").slice(0, 160))}</td></tr>`).join("")}</table></div><p class="small muted">*API-equivalent cost reported by Claude Code; on a subscription this counts against your plan's usage limits, not billed.</p>` : `<div class="card empty">No runs yet.</div>`;
+};
+async function showRun(id) { const r = await api(`/runs/${id}`); const d = document.createElement("div"); d.className = "drawer"; d.innerHTML = `<div class="row" style="justify-content:space-between"><h2 style="margin:0">Run #${r.id} · ${r.stage}</h2><button class="btn" onclick="this.closest('.drawer').remove()">Close</button></div><h3>Summary</h3><div class="post">${esc(r.summary || "")}</div><h3>Log</h3><pre class="log">${esc(r.log || "")}</pre>`; document.body.append(d); }
+VIEWS.settings = async () => {
+  const { config: c, integrations: i } = await api("/config");
+  const dot = (b, label) => `<div class="row" style="justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--line)"><span>${label}</span><span class="${b ? "hi" : "muted"}">${b ? "● connected" : "○ not set"}</span></div>`;
+  return `<div class="grid2">
+    <div class="card"><h2>Integrations</h2>${dot(i.smtp, "SMTP sending")}${dot(i.hunter, "Hunter.io")}${dot(i.apollo, "Apollo.io")}${dot(i.verifier, "Email verifier " + (i.verifier ? `(${i.verifier.split("_")[0].toLowerCase()})` : ""))}${dot(i.github, "GitHub token")}${dot(i.apify, "Apify (LinkedIn/X)")}
+      <div style="height:10px"></div><button class="btn" onclick="api('/smtp/verify',{method:'POST'}).then(()=>toast('SMTP OK')).catch(e=>toast(e.message))">Test SMTP login</button>
+      <p class="small muted">Keys live in <code>.env</code>. Agents run through your local <code>claude</code> CLI login.</p></div>
+    <div class="card"><h2>Targeting</h2><div class="small">
+      <b>Roles</b><br>${c.targets.roles.map((r) => `<span class="chip">${esc(r)}</span>`).join("")}<br><b>Keywords</b><br>${c.targets.keywords.map((r) => `<span class="chip">${esc(r)}</span>`).join("")}
+      <br><b>Work modes</b><br>${c.location.work_modes.join(", ")}<br><b>Preferred locations</b><br>${c.location.preferred_locations.join(", ")}<br><b>Hybrid cities</b><br>${c.location.hybrid_cities.join(", ")}
+      <br><b>You</b><br>${esc(c.candidate.location)} · can work in: ${esc(c.candidate.work_authorization.join(", "))}<br><b>Min fit score</b> ${c.targets.min_fit_score} · <b>Daily send limit</b> ${c.outreach.daily_send_limit} · <b>Model</b> ${esc(c.agents.model)}
+      </div><p class="small muted">Edit <code>hireloop.config.json</code> and <code>profile.md</code>; changes apply on the next run.</p></div></div>`;
+};
+
+render();
+setInterval(() => { if (!document.querySelector(".drawer") && !document.activeElement?.matches("textarea,input")) refreshStats(); }, 10000);
+</script>
+</body>
+</html>
