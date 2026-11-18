@@ -30,7 +30,8 @@
     "mcp": "tsx src/mcp/server.ts",
     "typecheck": "tsc --noEmit",
     "test:sources": "tsx scripts/smoke-sources.ts",
-    "test:mcp": "tsx scripts/smoke-mcp.ts"
+    "test:mcp": "tsx scripts/smoke-mcp.ts",
+    "package:skill": "bash scripts/package-skill.sh"
   },
   "license": "MIT",
   "type": "module",
