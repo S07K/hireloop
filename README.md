@@ -2,10 +2,11 @@
 
 # hireloop
 
-**An agentic job-outreach pipeline that runs on your Claude subscription.**
+**An agentic job-outreach pipeline powered by Claude Code, which you can launch from your favourite coding agent.**
 
 It finds people who are hiring, finds the decision-maker's email, and writes a specific, human email for each one.<br/>
-**Nothing is sent until you approve it.**
+**Nothing is sent until you approve it.**<br/>
+<sub>Requires the Claude Code CLI with a Claude Pro or Max login: the agents run on Claude Code, whichever assistant you launch them from.</sub>
 
 [![CI](https://github.com/S07K/hireloop/actions/workflows/ci.yml/badge.svg)](https://github.com/S07K/hireloop/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
@@ -14,9 +15,19 @@ It finds people who are hiring, finds the decision-maker's email, and writes a s
 [![Claude Code](https://img.shields.io/badge/built%20for-Claude%20Code-D97757?logo=anthropic&logoColor=white)](https://docs.claude.com/claude-code)
 [![MCP](https://img.shields.io/badge/MCP-20%20tools-6E56CF)](src/mcp/server.ts)
 [![SQLite](https://img.shields.io/badge/SQLite-node%3Asqlite-003B57?logo=sqlite&logoColor=white)](src/lib/db.ts)
+[![Agent Skill](https://img.shields.io/badge/Agent%20Skill-SKILL.md-8A2BE2)](skill/SKILL.md)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 
-[Quick start](#-quick-start) · [How it works](#-how-it-works) · [Configuration](#%EF%B8%8F-configuration) · [Integrations](#-integrations) · [Safety](#%EF%B8%8F-safety) · [Contributing](CONTRIBUTING.md)
+**Launch it from** <sub>(as an Agent Skill; the pipeline itself runs on Claude Code)</sub>
+
+[![Claude Code](https://img.shields.io/badge/Claude%20Code-D97757?logo=anthropic&logoColor=white)](https://docs.claude.com/claude-code)
+[![Codex](https://img.shields.io/badge/OpenAI%20Codex-412991?logo=openai&logoColor=white)](https://github.com/openai/codex)
+[![Cursor](https://img.shields.io/badge/Cursor-000000?logo=cursor&logoColor=white)](https://cursor.com)
+[![Gemini CLI](https://img.shields.io/badge/Gemini%20CLI-8E75B2?logo=googlegemini&logoColor=white)](https://github.com/google-gemini/gemini-cli)
+[![GitHub Copilot](https://img.shields.io/badge/GitHub%20Copilot-000000?logo=githubcopilot&logoColor=white)](https://github.com/features/copilot)
+[![MCP tools: any client](https://img.shields.io/badge/MCP%20tools-any%20client-6E56CF)](src/mcp/server.ts)
+
+[Quick start](#-quick-start) · [Other agents](#-launch-it-from-other-coding-agents) · [How it works](#-how-it-works) · [Configuration](#%EF%B8%8F-configuration) · [Integrations](#-integrations) · [Safety](#%EF%B8%8F-safety) · [Contributing](CONTRIBUTING.md)
 
 </div>
 
@@ -96,6 +107,25 @@ Sending happens from the dashboard process, so keep it running. Schedule the age
 ```
 </details>
 
+## 🤖 Launch it from other coding agents
+
+hireloop ships as a portable **[Agent Skill](skill/SKILL.md)**: a `SKILL.md` plus the bundled app. Add it to a coding agent that supports skills and can run shell commands on your machine (Claude Code, OpenAI Codex CLI, Cursor, Gemini CLI, GitHub Copilot agent mode and others) and just ask, for example *"find me backend roles at early-stage startups and draft outreach"*. The agent installs hireloop into `~/hireloop` (or `$HIRELOOP_HOME`), sets up your profile by asking you questions, runs the pipeline and hands you the dashboard to approve drafts.
+
+```bash
+npm run package:skill   # → dist/hireloop-skill-v<version>.zip
+```
+
+The zip contains `SKILL.md` at the root and the app under `app/`. Only git-tracked files are packaged, and the script refuses to build if `.env`, `profile.md`, `hireloop.config.json` or `data/` would end up inside.
+
+| Agent | How to add it |
+|---|---|
+| **Claude Code** | Unzip into `~/.claude/skills/hireloop/` |
+| **Codex CLI, Cursor, Gemini CLI, Copilot, others** | Unzip into that agent's skills folder, or point it at `SKILL.md` |
+
+The [MCP server](src/mcp/server.ts) also works on its own in any MCP client (`npm run mcp`). That gives an agent the individual tools (job sources, lead store, email finding), not the orchestrated pipeline.
+
+> **Important:** the other agent is only the front end. Whichever agent you talk to, the pipeline stages run as headless Claude Code sessions (`claude -p`) because they use Claude Code subagents. You need the [Claude Code CLI](https://docs.claude.com/claude-code) installed and logged in; it runs on your Claude subscription. Web chat apps (claude.ai, ChatGPT) can't run it: they have no local shell to run the CLI or the dashboard.
+
 ### Scripts
 
 | Command | Description |
@@ -106,6 +136,7 @@ Sending happens from the dashboard process, so keep it running. Schedule the age
 | `npm run pipeline` | Runs hunt → enrich → draft headless |
 | `npm run hunt` / `enrich` / `draft` | Runs a single stage |
 | `npm run mcp` | Starts the hireloop MCP server on stdio |
+| `npm run package:skill` | Builds the portable Agent Skill zip in `dist/` |
 | `npm run typecheck` | Type-checks the project |
 | `npm run test:sources` | Live fetch from every job source |
 | `npm run test:mcp` | End-to-end MCP tool smoke test on a temp DB |

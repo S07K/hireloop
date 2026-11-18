@@ -5,3 +5,4 @@ hireloop.config.json
 profile.md
 *.pdf
 .claude/settings.local.json
+dist/
