@@ -13,6 +13,7 @@ It finds people who are hiring, finds the decision-maker's email, and writes a s
 [![Node](https://img.shields.io/badge/node-%E2%89%A5%2022.13-339933?logo=node.js&logoColor=white)](https://nodejs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)](tsconfig.json)
 [![Claude Code](https://img.shields.io/badge/built%20for-Claude%20Code-D97757?logo=anthropic&logoColor=white)](https://docs.claude.com/claude-code)
+[![M8ven Score](https://m8ven.ai/badge/mcp/s07k-hireloop-y5nrcp?v=9fd223aa3f5c37e6b5ef1d93f1d889d4)](https://m8ven.ai/mcp/s07k-hireloop-y5nrcp?s=readme)
 [![MCP](https://img.shields.io/badge/MCP-20%20tools-6E56CF)](src/mcp/server.ts)
 [![SQLite](https://img.shields.io/badge/SQLite-node%3Asqlite-003B57?logo=sqlite&logoColor=white)](src/lib/db.ts)
 [![Agent Skill](https://img.shields.io/badge/Agent%20Skill-SKILL.md-8A2BE2)](skill/SKILL.md)
